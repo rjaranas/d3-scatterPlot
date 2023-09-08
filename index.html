@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatter Plot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous"> <!--bootstrap css-->
+    <link href="styles.css" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@200&family=Work+Sans:ital,wght@0,100;1,300&display=swap" rel="stylesheet"> 
+<body>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script> <!--bootstrap js-->
+
+
+    <script type="module">
+        import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm'
+
+        const dataPromise = d3.json('/json/data.json')
+
+        dataPromise.then(function(data) {
+            const dataset = data
+            console.log(dataset)
+            scatterPlot(dataset)
+            
+        })
+
+        
+        const width = 1400;
+        const height = 960;
+        
+
+
+        function scatterPlot(dataset) {
+
+            const tooltip = d3.select('body')
+            .append('div')
+            .attr('id', 'tooltip')
+            .attr('class', 'tooltip border border-2')
+            
+
+
+            const margin = {
+                top: 20,
+                right: 30,
+                bottom: 55,
+                left: 70
+            }
+
+      
+
+            
+
+            const container = d3.select('body')
+            .append('div')
+            .attr('id', 'container')
+            .attr('class', 'h-100 d-flex align-items-center justify-content-center')
+
+            // const secondsVal = dataset.map((d) => d.Time)
+            // console.log(secondsVal)
+            const parseYear = d3.timeParse('%Y')             
+            const parseTime = d3.timeParse('%M:%S')
+            const formatTime = d3.timeFormat('%M:%S') 
+
+            const xTicks = d3.timeYear.every(1).range(d3.extent(dataset, (d) => d.Year))
+
+        
+            // const testV = dataset.map((d) => d.Time)
+            // console.log(d3.extent(dataset, (d) => d.Year))
+            // console.log(d3.extent(dataset, (d) => d.Time))
+            // console.log(testV)
+  
+
+            const svg = container.append('svg')
+            .attr('width', width )
+            .attr('height', height + 100 )
+            .attr('style', 'outline: 1px solid black')
+            .attr('fill', 'black')
+    
+            
+        
+            
+            
+            const timeArray = dataset.map((d) => parseTime(d.Time))
+            const newTime = timeArray.map((d) => formatTime(d))
+            
+            console.log(newTime)
+            
+            const xScale = d3.scaleLinear()
+            .domain(d3.extent(dataset, (d) => d.Year))
+            .range([margin.left, width - margin.right])
+
+            const  yScale = d3.scaleTime()
+            .domain(d3.extent(timeArray))
+            .range([height - margin.bottom, margin.top])
+
+           
+            const xAxis = d3.axisBottom(xScale).tickFormat(d3.format('d'))
+
+            const yAxis = d3.axisLeft(yScale).tickFormat(d3.timeFormat('%M:%S'))
+
+            svg.selectAll('circle')
+            .data(dataset)
+            .enter()
+            .append('circle')
+            .attr('cx', (d) => xScale(d.Year))
+            .attr('cy', (d) => yScale(parseTime(d.Time)))
+            .attr('r', 5)
+            .attr('fill', (d) => dopeCheck(d.Doping))
+            .attr('data-xvalue', (d) => d.Year)
+            .attr('data-yvalue', (d) => parseTime(d.Time))
+            .attr('class', 'dot')
+            .on('mouseover', function (event, d) { 
+                const ntn = d.Nationality
+                const name = d.Name
+                const year = d.Year
+                const time = d.Time
+                const dCheck = d.Doping
+
+                tooltip.transition()
+                .duration(100)
+                .style('opacity', '0.9')
+                tooltip.html(`${d.Name} - ${d.Nationality}<br>Year: ${d.Year} Time: ${d.Time}<br>${d.Doping}`)
+                tooltip.attr('data-year', year)
+                
+            })
+            .on('mouseout', function(event, d) {
+                    tooltip.transition()
+                    .duration(300)
+                    .style('opacity', 0)
+                })  
+           
+
+       
+            svg.append('text')
+            .attr('x', width / 2 - 190)
+            .attr('y', 1000)
+            .attr('id', 'title')
+            .text('Rampant Doping in Professional Cycling')
+            .attr('text-decoration', 'underline')
+            .attr('font-size', '20px')
+
+            svg.append('text')
+            .attr('x', width / 2 - 160)
+            .attr('y', 1025)
+            .text(`Fastest Alpe d'Huez times over the years`)
+
+            svg.append('text')
+            .attr('x',  200)
+            .attr('y', 900)
+            .text('(minutes)')
+            .attr('transform', 'rotate(-90, ' + 0 + ', ' + 875 +')')
+
+            svg.append('g')
+            .attr('transform', `translate(0, ${height - margin.bottom})`)
+            .attr('id', 'x-axis')
+            .call(xAxis)
+            
+            svg.append('g')
+            .attr('transform', `translate(${margin.left}, 0)`)
+            .attr('id', 'y-axis')
+            .call(yAxis)
+
+            const legendX = 1220
+            const legendY = 600
+            const legendWidth = 20
+            const legendHeight = 10
+
+
+            svg.append('rect')
+            .attr('x', legendX)
+            .attr('y', legendY)
+            .attr('width', legendWidth)
+            .attr('height', legendHeight)
+            .attr('id', 'legend')
+            .attr('fill', 'red')
+
+            svg.append('text')
+            .attr('x', legendX + legendWidth + 5)
+            .attr('y', legendY + legendHeight)
+            .attr('id', 'legend')
+            .text('Doping')
+
+            svg.append('rect')
+            .attr('x', legendX )
+            .attr('y', legendY + 30)
+            .attr('width', legendWidth)
+            .attr('height', legendHeight)
+            .attr('id', 'legend')
+            .attr('fill', 'green')
+
+            svg.append('text')
+            .attr('x', legendX + legendWidth + 5)
+            .attr('y', legendY + legendHeight + 30)
+            .attr('id', 'legend')
+            .text('Not Doping')
+            
+
+            
+
+
+                function dopeCheck(Doping) {
+                    if (Doping !== '') {
+                        return 'red';
+                    } else {
+                        return 'green';
+                    }
+                }
+
+            
+                
+        }
+
+
+
+    </script>
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"> </script>
+    
+</body>
+</html>
