@@ -13,10 +13,7 @@ html, body {
     position: absolute;
     border-radius: 5px;
     padding: 3px;
-    left: 70em;
-    top: 45em;
-    font-size: 1.2em;
     background-color:rgba(255, 255, 255, 0.651);
-    margin: auto;
+  
 
 }
